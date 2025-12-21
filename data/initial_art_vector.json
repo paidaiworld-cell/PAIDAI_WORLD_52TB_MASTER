@@ -1,0 +1,15 @@
+{
+  "vector_id": "SYNTHESIS_AGENT_BASE_V1",
+  "persona_type": "SYNTHESIS_AGENT",
+  "appearance_attributes": {
+    "gender": "neutral",
+    "clothing_style": "minimal_utility_tech",
+    "color_palette": "neon_green_on_dark_gray",
+    "facial_expression_default": "analytical_calm",
+    "pose_default": "standing_at_console"
+  },
+  "animation_weights": {
+    "logic_to_emotion_ratio": 0.85,
+    "aggression_tolerance_baseline": 0.5
+  }
+}

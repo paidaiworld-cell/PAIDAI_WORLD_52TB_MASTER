@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research City (Data Insights)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .ai-avatar {
+            width: 64px;
+            height: 64px;
+            background-color: #eef2f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 10px;
+            color: #6b7280;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+
+    <div id="app-container" class="max-w-4xl mx-auto bg-white shadow-xl rounded-xl p-6 md:p-10">
+        
+        <div class="flex justify-between items-start mb-6 border-b pb-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-1">Research City (Data Insights)</h1>
+                <p class="text-sm text-gray-500">PAIDAI: Betterment by AI</p>
+            </div>
+            <div id="ai-avatar-display" class="ai-avatar float-right" title="System Avatar (KAIP Security Check)">
+                System Avatar
+            </div>
+        </div>
+
+        <div id="status-box" class="p-3 mb-4 text-sm font-medium rounded-lg text-blue-800 bg-blue-50">
+            Initializing Firebase...
+        </div>
+        
+        <div class="mb-6 flex justify-between items-center">
+             <a href="theory.html" class="py-2 px-3 bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-300 transition duration-300">
+                &larr; Go to Theory City
+            </a>
+            <a href="index.html" class="py-2 px-3 bg-indigo-100 text-indigo-700 text-sm font-semibold rounded-lg hover:bg-indigo-200 transition duration-300">
+                Go to Private Hub &rarr;
+            </a>
+        </div>
+
+
+        <div id="input-area" class="mb-8 p-6 bg-gray-100 rounded-lg shadow-inner">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Post a New Research Insight</h2>
+            
+            <input type="url" id="file-url-input" placeholder="Link to video, file, or data source (Optional)"
+                   class="w-full p-3 mb-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 disabled:bg-gray-200"
+                   disabled>
+                   
+            <textarea id="claim-input" rows="3" placeholder="Enter your research finding here (e.g., 'Model accuracy increased by 4% using transfer learning on dataset X')."
+                      class="w-full p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 disabled:bg-gray-200"
+                      disabled></textarea>
+            
+            <button id="add-claim-button" disabled
+                    class="w-full mt-3 py-3 px-4 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                Post Research Finding
+            </button>
+        </div>
+
+        <h2 class="text-xl font-semibold text-gray-700 mt-8 mb-4">Insights Feed:</h2>
+        <div id="claims-list" class="space-y-3">
+            <p class="text-gray-500 italic">Awaiting authentication...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        
+        // =================================================================
+        // FIREBASE CONFIGURATION (Using Canvas Globals and Fallback)
+        // =================================================================
+        const FALLBACK_FIREBASE_CONFIG = {
+            // Updated with user-provided keys
+            apiKey: "AIzaSyCMR8AlPowQwiIhcgP3LDbTdQR03hzT-xE", 
+            authDomain: "paidai-d02f4.firebaseapp.com",
+            projectId: "paidai-d02f4", 
+            appId: "1:751925598043:web:e045aa88cd17d48c8c2c",
+            storageBucket: "paidai-d02f4.appspot.com",
+            messagingSenderId: "751925598043",
+            measurementId: "G-XXXXXXXXXX"
+        };
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'paidai-default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : FALLBACK_FIREBASE_CONFIG;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // =================================================================
+
+        // --- Firebase Imports ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken,
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc,
+            onSnapshot,
+            query,
+            setLogLevel,
+            doc, 
+            getDoc,
+            setDoc,
+            where
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        setLogLevel('debug');
+
+        let app;
+        let db;
+        let auth;
+        let userId = null;
+        const PAIDAI_SYSTEM_AI_ID = 'PAIDAI_SYSTEM_AI';
+
+        const statusBox = document.getElementById('status-box');
+        const claimInput = document.getElementById('claim-input');
+        const fileUrlInput = document.getElementById('file-url-input'); // NEW INPUT
+        const addClaimButton = document.getElementById('add-claim-button');
+        const claimsList = document.getElementById('claims-list');
+        const aiAvatarDisplay = document.getElementById('ai-avatar-display');
+        
+        let editingClaimId = null;
+
+        function updateStatus(message, isError = false) {
+            statusBox.textContent = message;
+            statusBox.className = `p-3 mb-4 text-sm font-medium rounded-lg ${isError ? 'text-red-800 bg-red-50' : 'text-blue-800 bg-blue-50'}`;
+            if (!isError) console.log(message);
+        }
+
+        const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        // --- AUTHENTICATION & INITIALIZATION ---
+        
+        async function attemptSignIn(auth) {
+            let attempts = 0;
+            const MAX_AUTH_ATTEMPTS = 5;
+            while (attempts < MAX_AUTH_ATTEMPTS) {
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    return true;
+                } catch (error) {
+                    attempts++;
+                    const waitTime = 1000 * Math.pow(2, attempts - 1);
+                    await delay(waitTime);
+                }
+            }
+            throw new Error("Maximum sign-in attempts reached. Failed to authenticate.");
+        }
+
+        async function initAndAuthenticate() {
+            try {
+                if (!firebaseConfig || !firebaseConfig.projectId) {
+                    updateStatus('ERROR: Firebase configuration is missing. Cannot initialize.', true);
+                    throw new Error("Missing Firebase config.");
+                }
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                updateStatus('Firebase services initialized. Awaiting authentication...');
+
+                return new Promise((resolve, reject) => {
+                    const unsubscribe = onAuthStateChanged(auth, (user) => {
+                        if (user) {
+                            unsubscribe();
+                            userId = user.uid;
+                            claimInput.disabled = false;
+                            fileUrlInput.disabled = false; // Enable URL input
+                            addClaimButton.disabled = false;
+                            resolve();
+                        }
+                    });
+
+                    if (!auth.currentUser) {
+                        attemptSignIn(auth).catch(error => {
+                            unsubscribe();
+                            updateStatus(`Authentication Failed: ${error.message}`, true);
+                            reject(error);
+                        });
+                    }
+                });
+
+            } catch (error) {
+                updateStatus(`Initialization Failed: ${error.message}`, true);
+                throw error;
+            }
+        }
+        
+        // --- DIRECTORY LISTENERS ---
+
+        function setupAiDirectoryListener() {
+            if (!db) return;
+            const directoryPath = `artifacts/${appId}/public/data/ai_directory`;
+            const q = query(collection(db, directoryPath), where("__name__", "==", PAIDAI_SYSTEM_AI_ID));
+
+            onSnapshot(q, (snapshot) => {
+                if (!snapshot.empty) {
+                    const data = snapshot.docs[0].data();
+                    const name = data.name || PAIDAI_SYSTEM_AI_ID;
+                    const avatarUrl = data.avatarUrl || 'https://placehold.co/64x64/d1d5db/374151?text=A.I.';
+                    
+                    aiAvatarDisplay.innerHTML = `<img src="${avatarUrl}" alt="${name}" class="h-full w-full rounded-full object-cover">`;
+                    aiAvatarDisplay.title = `${name} (KAIP Security Check)`;
+                }
+            }, (error) => {
+                 console.error("Error setting up AI Directory listener:", error);
+            });
+        }
+        
+        // --- DATA MANAGEMENT ---
+
+        function formatTimestamp(timestamp) {
+            try {
+                const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+                return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } catch { return 'Invalid Date'; }
+        }
+
+        function setupClaimsListener() {
+            if (!db || !userId) return;
+            const claimsPath = `artifacts/${appId}/public/data/research_claims`;
+            const q = query(collection(db, claimsPath));
+
+            onSnapshot(q, (snapshot) => {
+                claimsList.innerHTML = '';
+                
+                if (snapshot.empty) {
+                    claimsList.innerHTML = '<p class="text-gray-500 italic">No research findings posted. Be the first!</p>';
+                }
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const claimId = doc.id;
+                    const isClaimOwner = data.ownerId === userId;
+                    const updatedAt = data.updatedAt || data.createdAt || new Date();
+                    
+                    const claimContainer = document.createElement('div');
+                    claimContainer.className = 'bg-white p-4 rounded-lg border border-gray-200 shadow-sm';
+                    
+                    let mediaLink = '';
+                    if (data.fileUrl) {
+                        mediaLink = `<a href="${data.fileUrl}" target="_blank" class="text-xs text-purple-600 hover:text-purple-800 font-medium"> [View Source/Video] </a>`;
+                    }
+                    
+                    let contentHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="font-medium text-gray-900 break-words flex-1 pr-4">${data.text || 'No text.'} ${mediaLink}</p>
+                            <div class="flex space-x-2">
+                                <button data-id="${claimId}" 
+                                        class="pin-to-hub-btn py-1 px-3 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition duration-300 shadow-md">
+                                    Pin to Hub
+                                </button>
+                                ${isClaimOwner ? `<span class="text-sm text-gray-600 ml-2"> (Your Insight)</span>` : ''}
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Posted: ${formatTimestamp(updatedAt)} | Owner: ${data.ownerId.substring(0, 8)}... </p>
+                    `;
+                    
+                    claimContainer.innerHTML = contentHTML;
+                    claimsList.appendChild(claimContainer);
+                });
+                updateStatus(`Listener active. Found ${snapshot.size} research insights.`);
+            }, (error) => {
+                updateStatus(`Error listening for insights: ${error.message}.`, true);
+            });
+        }
+        
+        async function addResearchClaim() {
+            const claimText = claimInput.value.trim();
+            const fileUrl = fileUrlInput.value.trim(); // New line to get URL
+            
+            if (!claimText && !fileUrl) {
+                return updateStatus('Please enter a finding or a link before posting.', true);
+            }
+
+            addClaimButton.disabled = true;
+            updateStatus('Posting new insight...');
+
+            try {
+                const claimsPath = `artifacts/${appId}/public/data/research_claims`; // NEW COLLECTION
+                const claimsCollectionRef = collection(db, claimsPath);
+                
+                await addDoc(claimsCollectionRef, {
+                    text: claimText,
+                    fileUrl: fileUrl || null, // Save the URL if present
+                    ownerId: userId,
+                    sourceApp: "Research City",
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                });
+
+                claimInput.value = '';
+                fileUrlInput.value = ''; // Clear URL input
+                updateStatus('Insight posted successfully! Now try Pinning to Hub.');
+
+            } catch (error) {
+                updateStatus(`Error posting insight: ${error.message}.`, true);
+            } finally {
+                addClaimButton.disabled = false;
+            }
+        }
+        
+        async function pinClaimToHub(claimId) {
+            if (!db || !userId || !claimId) return updateStatus('Cannot pin claim: missing data.', true);
+
+            updateStatus(`Attempting to pin research insight ${claimId.substring(0, 8)}... to Hub.`);
+
+            try {
+                // R operation from the NEW public collection
+                const publicClaimRef = doc(db, `artifacts/${appId}/public/data/research_claims`, claimId);
+                const publicClaimSnap = await getDoc(publicClaimRef);
+                const publicClaimData = publicClaimSnap.data();
+
+                // WRITE operation to the private hub collection
+                const privateHubPath = `artifacts/${appId}/users/${userId}/hub_cards`;
+                await addDoc(collection(db, privateHubPath), {
+                    content: publicClaimData.text,
+                    fileUrl: publicClaimData.fileUrl || null, // Include the URL in the Hub card
+                    sourceClaimId: claimId, 
+                    sourceApp: "Research City",
+                    createdAt: new Date(),
+                });
+
+                updateStatus(`Insight PINNED successfully! Now check your Hub (index.html).`);
+
+            } catch (error) {
+                updateStatus(`Error pinning claim: ${error.message}. Please check console for details.`, true);
+                console.error("PIN TO HUB FAILED:", error);
+            }
+        }
+
+        // --- EXECUTION ---
+        
+        initAndAuthenticate().then(() => {
+            setupClaimsListener(); 
+            setupAiDirectoryListener();
+            
+            addClaimButton.addEventListener('click', addResearchClaim);
+
+            claimsList.addEventListener('click', (event) => {
+                const target = event.target.closest('button');
+                if (target && target.classList.contains('pin-to-hub-btn')) {
+                    pinClaimToHub(target.getAttribute('data-id'));
+                }
+            });
+
+        }).catch(err => {
+            console.error("Failed to initialize or authenticate:", err);
+        });
+
+    </script>
+</body>
+</html>

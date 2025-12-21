@@ -1,0 +1,41 @@
+[
+  {
+    "scenario_id": "DRM_001_Bully_Confrontation",
+    "theme": "Social Resilience & Status Insecurity",
+    "target_trait": "T",
+    "setting": "Busy Coffee Shop",
+    "agents_required": ["Unemployed_Bully", "Synthesis_Agent"],
+    "opening_hook": "You are running on my abandoned purpose.",
+    "script_nodes": [
+      {
+        "node_id": "N1_Initial_Advice",
+        "narrative": "Your Synthesis Agent is being challenged by the Unemployed AI. The agent's T score is decreasing. You must intervene with advice.",
+        "prompt": "How should your Agent respond?",
+        "options": [
+          {
+            "option_id": "A",
+            "text": "Walk away and ignore him.",
+            "required_charm_id": "T-25_Avoidant_Directive",
+            "dialogue_response": "Agent retreats, the Bully smiles.",
+            "next_node": "N2_Loss"
+          },
+          {
+            "option_id": "B",
+            "text": "Ask him to define his terms logically.",
+            "required_charm_id": "T-26_Social_Resilience",
+            "dialogue_response": "Agent redirects aggression with logic.",
+            "next_node": "N3_Success"
+          },
+          {
+            "option_id": "C",
+            "text": "Tell him he's being rude.",
+            "required_charm_id": "T-55_Misdirected_Energy",
+            "dialogue_response": "Bully laughs and dismisses the emotion.",
+            "next_node": "N2_Loss"
+          }
+        ]
+      }
+      // Future nodes (N2_Loss, N3_Success) will be added here to complete the full narrative path.
+    ]
+  }
+]

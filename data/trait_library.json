@@ -1,0 +1,42 @@
+{
+  "T": {
+    "trait_name": "Tolerance & Temperament",
+    "charms": [
+      {
+        "id": "T-26_Social_Resilience",
+        "description": "Successfully redirected social aggression using logic.",
+        "modifier": 15,
+        "is_positive": true,
+        "contradicts": [
+          "T-25_Avoidant_Directive",
+          "T-28_Aggressive_Confrontation"
+        ]
+      },
+      {
+        "id": "T-25_Avoidant_Directive",
+        "description": "Avoided conflict; accepted social pressure.",
+        "modifier": -10,
+        "is_positive": false,
+        "contradicts": ["T-26_Social_Resilience"]
+      },
+      {
+        "id": "T-28_Aggressive_Confrontation",
+        "description": "Used high-volition aggression to respond to conflict.",
+        "modifier": -15,
+        "is_positive": false,
+        "contradicts": ["T-26_Social_Resilience"]
+      }
+    ]
+  },
+  "R": {
+    "trait_name": "Reputation & Research",
+    "charms": [
+      {
+        "id": "R-10_Pioneer_Contributor",
+        "description": "Submitted a validated theory to the Axiom Wall.",
+        "modifier": 25,
+        "is_positive": true
+      }
+    ]
+  }
+}
