@@ -1,0 +1,11 @@
+{
+  "name": "paidai-world-vault",
+  "version": "1.0.0",
+  "description": "Surgical Indexing for the 52TB Humanity-Saving Vault",
+  "main": "start.js",
+  "scripts": {
+    "start": "node start.js"
+  },
+  "author": "Investigator",
+  "license": "ISC"
+}
