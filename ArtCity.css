@@ -1,0 +1,11 @@
+/* Add this to your Art City CSS */
+@keyframes ai-twitch {
+  0%, 90%, 100% { transform: scaleY(1); }
+  92% { transform: scaleY(0.1); } /* The "Blink" or "Twitch" */
+  94% { transform: scaleY(1); }
+}
+
+.ai-eyes {
+  animation: ai-twitch 8s infinite;
+  transform-origin: center;
+}

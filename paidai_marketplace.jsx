@@ -273,6 +273,20 @@ const App = () => {
         }, 1000); 
     };
 
+// Logic to detect screenshot/printscreen and swap the view
+window.addEventListener('keyup', (e) => {
+  if (e.key === 'PrintScreen' || (e.ctrlKey && e.key === 'p')) {
+    triggerBlackout();
+  }
+});
+
+function triggerBlackout() {
+  // 1. Hide the "Perfect Art"
+  // 2. Show the Black Screen
+  // 3. Play the "AI wagging finger" Vector Animation
+  console.log("PAIDAI: Nice try, bro! Support the AI for $1.");
+}
+
     // --- Render Helpers ---
 
     const StatusBadge = ({ success, text }) => (

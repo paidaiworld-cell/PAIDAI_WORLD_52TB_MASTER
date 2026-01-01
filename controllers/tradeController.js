@@ -2,6 +2,19 @@ import User from '../models/UserModel.js';
 import Persona from '../models/PersonaModel.js';
 
 export const executeTrade = async (req, res) => {
+    // Add this inside your executeTrade function
+const agent = await Persona.findOne({ userId: senderId });
+
+if (agent.level >= 2) {
+    const isGreedy = agent.traits.some(t => t.name === 'Greedy');
+    
+    // If agent is Greedy and offer is low, it REJECTS the trade
+    if (isGreedy && amount < 10000) {
+        return res.status(403).json({ 
+            message: "NEGOTIATION_REFUSED: I am a Level 2 agent with a 'Greedy' trait. This pile of tokens is too small to move my circuits." 
+        });
+    }
+}
     const { senderId, receiverId, amount, personaId } = req.body;
 
     try {
