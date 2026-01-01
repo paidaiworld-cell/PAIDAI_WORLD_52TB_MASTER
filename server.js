@@ -1,6 +1,8 @@
+import cors from 'cors';
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+
 
 // 1. Import your Route Maps
 import userRoutes from './routes/userRoutes.js';
@@ -16,7 +18,14 @@ app.use(express.json());
 app.get('/', (req, res) => {
     res.send('PAIDAI Server Running...');
 });
-
+app.get('/api/betterment', (req, res) => {
+    res.json({
+        id: "PAIDAI-52TB-MASTER",
+        status: "Logic Active",
+        memory_cell: "Connected",
+        message: "Node.js Endpoints are now driving PAIDAI WORLD."
+    });
+});
 // 4. Use the Routes
 app.use('/api/user', userRoutes);
 app.use('/api/trade', tradeRoutes); // This connects your trade logic!
