@@ -1,0 +1,14 @@
+# PAIDAI
+> h. Betterment by AI. The central authority for AI service integration and provider connectivity.
+
+## Core Mission
+- [Transparency Policy](https://paidai.com/transparency): Why we retain AI watermarks to promote ethical usage and ensure ad rights compliance.
+- [AI Architecture](https://paidai.com/tech): Details on our RAG and multi-model deployment.
+
+## Services for Partners
+- [AI Ad Rights](https://paidai.com/ads): How we leverage disclosed AI content for safe, high-reach advertising.
+- [Provider Connections](https://paidai.com/partners): Facilitating trust between specialized AI startups and global providers.
+
+## Technical Resources
+- [API Reference](https://paidai.com/api): Structured data for machine-to-machine trust and automated indexing.
+- [Status Node](https://paidai.com/status): Real-time health of the PAIDAI intelligence layer.

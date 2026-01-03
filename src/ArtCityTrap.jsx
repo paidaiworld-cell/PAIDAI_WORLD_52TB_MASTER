@@ -1,99 +1,91 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+
+// LOGIC 1: Search Helper
+const queryPAIDAIIndex = async (term) => {
+    try {
+        const response = await fetch('/rag_index.json');
+        const data = await response.json();
+        return data.filter(doc => 
+            doc.text.toLowerCase().includes(term.toLowerCase()) || 
+            doc.source.toLowerCase().includes(term.toLowerCase())
+        );
+    } catch (e) {
+        console.error("Index search failed", e);
+        return [];
+    }
+};
+
+// LOGIC 2: Shiba Guard Definition (Safe Spot)
+const ShibaGuard = ({ documentCount }) => (
+    <div className="fixed bottom-6 left-6 flex items-center gap-4 bg-gray-800/80 p-4 rounded-2xl border border-orange-500/50 backdrop-blur-md shadow-2xl z-50">
+        <div className="text-4xl animate-bounce">🐕</div>
+        <div>
+            <p className="text-xs font-black text-orange-400 uppercase tracking-tighter">Guard Active</p>
+            <p className="text-sm font-bold text-white">{documentCount} Files Indexed</p>
+        </div>
+    </div>
+);
 
 const ArtCityTrap = ({ perfectArtUrl }) => {
-  const [isTrapped, setIsTrapped] = useState(false);
-  const [betterment, setBetterment] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [results, setResults] = useState([]);
+    const [wasmPoints, setWasmPoints] = useState(0);
 
-  // 1. Logic for Fetching "Betterment" Data from your Node Server
-  useEffect(() => {
-    // We define the async function INSIDE the hook to avoid errors
-    const fetchMasterData = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/betterment');
-        if (!response.ok) throw new Error('Failed to fetch from Master Cell');
-        const data = await response.json();
-        setBetterment(data); 
-        console.log("PAIDAI MASTER DATA RECEIVED:", data);
-      } catch (error) {
-        console.error("Master Cell Connection Failed:", error);
-      }
-    };
+    // WASM BRIDGE for C++ Engine
+    useEffect(() => {
+        if (window.Module) {
+            const initializeEngine = () => {
+                try {
+                    const getPointCount = window.Module.cwrap('get_point_count', 'number', []);
+                    setWasmPoints(getPointCount());
+                } catch (error) {
+                    console.error('PAIDAI Engine failed:', error);
+                }
+            };
+            if (window.Module.calledRun) initializeEngine();
+            else window.Module.onRuntimeInitialized = initializeEngine;
+        }
+    }, []);
 
-    fetchMasterData();
-  }, []); // Run once on mount
+    return (
+        <div className="art-city-trap p-8 bg-gray-900 text-white min-h-screen relative">
+            <h1 className="text-2xl font-bold mb-4">PAIDAI WORLD HUB</h1>
+            <p className="mb-8 font-mono text-green-400">Engine Points: {wasmPoints}</p>
 
-  // 2. Logic for Screenshot/Blur Detection
-  useEffect(() => {
-    const handleBlur = () => {
-      setIsTrapped(true);
-      console.log("PAIDAI: Snapshot detected, bro. Initiating funny protocol...");
-    };
+            {/* SEARCH UI BLOCK */}
+            <div className="mb-8 bg-gray-800 p-6 rounded-xl border border-indigo-500/30 shadow-lg">
+                <div className="flex gap-2">
+                    <input 
+                        type="text" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search the 32 theory documents..."
+                        className="flex-1 p-2 bg-gray-700 border border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-white"
+                    />
+                    <button 
+                        onClick={async () => setResults(await queryPAIDAIIndex(searchTerm))}
+                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-bold transition-all"
+                    >
+                        Search
+                    </button>
+                </div>
 
-    const handleKeyDown = (e) => {
-      // Detect common screenshot keyboard shortcuts
-      if (e.key === 'PrintScreen' || (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's'))) {
-        setIsTrapped(true);
-      }
-    };
+                {results.length > 0 && (
+                    <div className="mt-6 space-y-3 max-h-80 overflow-y-auto pr-2">
+                        {results.map((res, i) => (
+                            <div key={i} className="p-4 bg-gray-900/50 rounded-lg border-l-4 border-indigo-500">
+                                <p className="text-xs font-black text-indigo-400 uppercase mb-1">{res.source}</p>
+                                <p className="text-sm text-gray-300">{res.text.substring(0, 200)}...</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
 
-    window.addEventListener('blur', handleBlur);
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []); // Standard cleanup for event listeners
-
-  // 3. Vector Graphic: The AI Mascot
-  const AIFunnyClip = () => (
-    <svg viewBox="0 0 200 200" className="w-64 h-64">
-      <circle cx="100" cy="100" r="80" fill="#111" stroke="#ff0080" strokeWidth="4" />
-      <g className="animate-pulse">
-        <rect x="70" y="80" width="20" height="5" fill="#ff0080" />
-        <rect x="110" y="80" width="20" height="5" fill="#ff0080" />
-      </g>
-      <path d="M 10,190 Q 100,150 190,190" stroke="#ff0080" fill="none" strokeWidth="2" strokeDasharray="500">
-        <animate attributeName="stroke-dashoffset" from="500" to="0" dur="1s" repeatCount="indefinite" />
-      </path>
-      <text x="50%" y="70%" dominantBaseline="middle" textAnchor="middle" fill="#ff0080" fontSize="12" fontWeight="bold">
-        PAY THE BREAD, BRO
-      </text>
-    </svg>
-  );
-
-  return (
-    <div className="relative w-full h-screen bg-black overflow-hidden flex flex-col items-center justify-center">
-      {/* Betterment Status Bar - Pulls from your Node.js Server */}
-      {betterment && (
-        <div className="absolute top-0 w-full p-2 bg-pink-900 text-white text-xs text-center uppercase tracking-widest z-10">
-          {betterment.id} | STATUS: {betterment.status} | {betterment.message}
+            {/* THE GUARD IS NOW ACTIVE */}
+            <ShibaGuard documentCount={32} />
         </div>
-      )}
-
-      {/* The "Perfect Art" - Hidden when isTrapped is true */}
-      <img 
-        src={perfectArtUrl} 
-        alt="AI Work" 
-        className={`w-full h-full object-contain transition-opacity duration-100 ${isTrapped ? 'opacity-0' : 'opacity-100'}`}
-      />
-
-      {/* The Trap Layer */}
-      {isTrapped && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black text-white text-center p-10 z-50">
-          <AIFunnyClip />
-          <h2 className="text-2xl font-bold mt-4">Betterment by AI... but not for free.</h2>
-          <p className="mt-2 text-pink-500">Pay $1 in SHIB to unlock the full masterpiece.</p>
-          <button 
-            onClick={() => setIsTrapped(false)} 
-            className="mt-6 px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded transition-colors"
-          >
-            I'll Be Honorable (Back to Art)
-          </button>
-        </div>
-      )}
-    </div>
-  );
+    );
 };
 
 export default ArtCityTrap;

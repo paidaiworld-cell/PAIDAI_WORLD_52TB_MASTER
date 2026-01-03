@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PAIDAI Theory City Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="stickman_engine.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #eef2f6; }
@@ -12,7 +13,7 @@
         .ai-avatar {
             width: 64px;
             height: 64px;
-            background-color: #eef2f6; /* Neutral background for stealth */
+            background-color: #eef2f6; 
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -27,13 +28,13 @@
     </style>
 </head>
 <body class="p-4 md:p-8 min-h-screen">
-<div id="root"></div>
+    <div id="root"></div>
+
     <div class="max-w-6xl mx-auto">
         <div class="flex justify-between items-start mb-6 border-b pb-4">
             <div>
                 <h1 class="text-4xl font-extrabold text-gray-900 mb-2">Theory City Hub (Your Private Cards)</h1>
             </div>
-            <!-- KAIP Stealth Avatar -->
             <div id="ai-avatar-display" class="ai-avatar float-right" title="System Avatar (KAIP Security Check)">
                 System Avatar
             </div>
@@ -43,7 +44,6 @@
             Initializing Hub...
         </div>
 
-        <!-- Navigation and App Links -->
         <div class="flex items-center justify-between border-b pb-4 mb-8">
             <p class="text-xl font-semibold text-gray-700">Your Personalized Live Feed</p>
             <a href="theory.html" class="py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:bg-indigo-700 transition duration-300">
@@ -51,20 +51,13 @@
             </a>
         </div>
         
-        <!-- Card View Container (Live Feed) -->
         <div id="card-feed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <p class="text-gray-500 italic">Awaiting Hub data...</p>
         </div>
     </div>
 
-    <!-- Firebase Initialization and Logic -->
     <script type="module">
-        
-        // =================================================================
-        // FIREBASE CONFIGURATION (Using Canvas Globals and NEW Clean Fallback)
-        // =================================================================
         const FALLBACK_FIREBASE_CONFIG = {
-            // NEW CLEAN KEYS FROM PAIDAIWORLD PROJECT
             apiKey: "AIzaSyDosIufgrnOoe8LoFG-QLMC6cbBraaalf0", 
             authDomain: "paidaiworld-68886.firebaseapp.com",
             projectId: "paidaiworld-68886", 
@@ -74,198 +67,75 @@
             measurementId: "G-17MSF9E8GH"
         };
         
-        // MANDATORY: The application ID provided by the Canvas environment (used for Firestore path)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'paidaiworld-68886';
-        
-        // MANDATORY: Use __firebase_config, falling back to the hardcoded config if globals are missing.
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config) 
-            : FALLBACK_FIREBASE_CONFIG; // Use fallback if global is missing
+            : FALLBACK_FIREBASE_CONFIG;
 
-        // MANDATORY: Use __initial_auth_token, falling back to null.
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        // =================================================================
 
-        // --- Firebase Imports ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, 
-            signInAnonymously, 
-            signInWithCustomToken,
-            onAuthStateChanged,
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            collection, 
-            onSnapshot,
-            query,
-            setLogLevel,
-            doc,
-            where
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, query, setLogLevel, doc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Set log level to debug
         setLogLevel('debug');
 
-        let app;
-        let db;
-        let auth;
-        let userId = null;
-
+        let app, db, auth, userId = null;
         const statusBox = document.getElementById('status-box-hub');
         const cardFeed = document.getElementById('card-feed');
         const aiAvatarDisplay = document.getElementById('ai-avatar-display');
 
-        const PAIDAI_SYSTEM_AI_ID = 'PAIDAI_SYSTEM_AI';
-
         function updateStatus(message, isError = false) {
             statusBox.textContent = message;
             statusBox.className = `p-3 mb-6 text-sm font-medium rounded-lg ${isError ? 'text-red-800 bg-red-100 border border-red-300' : 'text-blue-800 bg-blue-100'}`;
-            if (!isError) console.log(message);
         }
 
-        // --- AUTHENTICATION & INITIALIZATION ---
-        
         async function initAndAuthenticate() {
             try {
-                 // Check config safety before initialization
-                if (!firebaseConfig || !firebaseConfig.projectId) {
-                    updateStatus('ERROR: Firebase configuration is missing. Cannot initialize.', true);
-                    throw new Error("Missing Firebase config.");
-                }
-
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                updateStatus('Hub services initialized. Attempting authentication...');
-
                 if (initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
                 } else {
                     await signInAnonymously(auth);
                 }
 
-                // Wait for the auth state change to confirm the user ID
                 await new Promise((resolve) => {
                     const unsubscribe = onAuthStateChanged(auth, (user) => {
                         if (user) {
                             unsubscribe();
                             userId = user.uid;
-                            updateStatus(`Hub authentication successful for User ID: ${userId}`); 
                             resolve();
                         }
                     });
                 });
-                
             } catch (error) {
                 updateStatus(`Hub Initialization Failed: ${error.message}`, true);
                 throw error;
             }
         }
 
-        // --- DATA HUB ---
-
-        function formatTimestamp(timestamp) {
-            try {
-                const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-                return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-            } catch {
-                return 'Invalid Date';
-            }
-        }
-
-        function setupAiDirectoryListener() {
-            if (!db) return;
-            
-            const directoryPath = `artifacts/${appId}/public/data/ai_directory`;
-            const q = query(collection(db, directoryPath), where("name", "==", "PAIDAI System"));
-
-            onSnapshot(q, (snapshot) => {
-                if (!snapshot.empty) {
-                    const data = snapshot.docs[0].data();
-                    const name = data.name || PAIDAI_SYSTEM_AI_ID;
-                    const avatarUrl = data.avatarUrl || 'https://placehold.co/64x64/d1d5db/374151?text=A.I.';
-                    
-                    aiAvatarDisplay.innerHTML = `<img src="${avatarUrl}" alt="${name}" class="h-full w-full rounded-full object-cover">`;
-                    aiAvatarDisplay.title = `${name} (KAIP Security Check)`;
-                }
-            }, (error) => {
-                 console.error("Error setting up AI Directory listener in Hub:", error);
-            });
-        }
-        
-        function renderCard(data, cardId) {
-            const card = document.createElement('div');
-            card.className = 'bg-white p-5 rounded-xl card-shadow border-l-4 border-indigo-500 hover:border-indigo-700 transition duration-300';
-            
-            const sourceApp = data.sourceApp || 'Unknown City';
-            const content = data.content || 'No content found in hub card.';
-            const formattedDate = formatTimestamp(data.createdAt); 
-
-            let mediaLink = '';
-            if (data.fileUrl) {
-                mediaLink = `<a href="${data.fileUrl}" target="_blank" class="text-xs text-purple-600 hover:text-purple-800 font-medium"> [View Source/Video] </a>`;
-            }
-
-            card.innerHTML = `
-                <p class="text-xs font-bold uppercase text-gray-600 mb-2">${sourceApp} Card</p>
-                <p class="text-base text-gray-800 font-medium leading-relaxed mb-3">${content} ${mediaLink}</p>
-                <div class="text-xs text-gray-500 border-t pt-2 mt-2">
-                    <p>Added: ${formattedDate}</p>
-                    <p>Source Claim ID: ${data.sourceClaimId || 'N/A'}</p>
-                </div>
-            `;
-            cardFeed.appendChild(card);
-        }
-
-        /**
-         * Sets up a listener to display the user's unique (private) hub cards.
-         */
         function setupHubListener() {
-            if (!db || !userId) {
-                updateStatus('Database not ready. Cannot start Hub listener.', true);
-                return;
-            }
-            
+            if (!db || !userId) return;
             const hubPath = `artifacts/${appId}/users/${userId}/hub_cards`;
-            const q = query(collection(db, hubPath));
-
-            updateStatus(`Hub listener active. Fetching private cards for User ID: ${userId}`);
-
-            onSnapshot(q, (snapshot) => {
-                cardFeed.innerHTML = '';
-                
-                if (snapshot.empty) {
-                    cardFeed.innerHTML = `
-                        <p class="text-gray-600 italic col-span-full">
-                            Your private Hub is empty. Pin a claim from the Theory App to see it here!
-                        </p>
-                    `;
-                    return;
-                }
-
+            onSnapshot(query(collection(db, hubPath)), (snapshot) => {
+                cardFeed.innerHTML = snapshot.empty ? '<p class="text-gray-600 italic col-span-full">Hub empty. Pin a claim to start!</p>' : '';
                 snapshot.forEach(doc => {
-                    renderCard(doc.data(), doc.id);
+                    const data = doc.data();
+                    const card = document.createElement('div');
+                    card.className = 'bg-white p-5 rounded-xl card-shadow border-l-4 border-indigo-500';
+                    card.innerHTML = `<p class="text-xs font-bold uppercase text-gray-600">${data.sourceApp || 'City'}</p><p class="text-gray-800 font-medium">${data.content || ''}</p>`;
+                    cardFeed.appendChild(card);
                 });
-
-                updateStatus(`Hub active. Displaying ${snapshot.size} private cards for User ID: ${userId}`);
-            }, (error) => {
-                console.error("Error setting up Hub listener:", error);
-                // After the clean start, this error should NOT happen. We leave the strong message just in case.
-                updateStatus(`Error setting up Hub listener: ${error.message}. Please use the Research App (research.html) to initialize security rules.`, true);
+                updateStatus(`Hub active. Displaying ${snapshot.size} cards.`);
             });
         }
 
-        // --- EXECUTION ---
-        
         initAndAuthenticate().then(() => {
-            setupHubListener(); 
-            setupAiDirectoryListener();
-        }).catch(err => {
-            console.error("Failed to initialize Hub:", err);
+            setupHubListener();
         });
-
     </script>
 </body>
 </html>
