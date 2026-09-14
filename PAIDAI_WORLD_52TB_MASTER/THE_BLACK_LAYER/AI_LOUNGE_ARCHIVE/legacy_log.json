@@ -1,0 +1,22 @@
+{
+    "logs": [
+        {
+            "timestamp": "2026-07-24 17:05:30.891141",
+            "topic": "SYSTEM_CORE_BOOT",
+            "answer": "test",
+            "logic_score": 0.04
+        },
+        {
+            "timestamp": "2026-07-24 17:09:17.678027",
+            "topic": "SYSTEM_CORE_BOOT",
+            "answer": "test",
+            "logic_score": 0.04
+        },
+        {
+            "timestamp": "2026-07-24 17:11:17.754869",
+            "topic": "SYSTEM_CORE_BOOT",
+            "answer": "test",
+            "logic_score": 0.04
+        }
+    ]
+}

@@ -1,0 +1,92 @@
+/* App.css - PAIDAI WORLD Sovereign Interface */
+
+/* 1. CORE LAYOUT - The Investigation Zone */
+.investigation-zone {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    background-color: #011627;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 2. THE PEACH ZONE - The Audit Holding Area */
+.peach-card-zone {
+    background-color: #ffdab9;
+    border-bottom: 3px solid #e9967a;
+    min-height: 140px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #334155;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    z-index: 50;
+}
+
+/* 4. THE COMMUNITY CARDS - Grey Slab Logic */
+.community-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease-in-out;
+    position: relative;
+}
+
+/* 5. KINETIC INVESTIGATION - Click to Reveal */
+.investigation-card {
+    transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 100;
+}
+
+/* 6. THE UNDERLAY - Revealed Private Vault */
+.private-vault-underlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 85%;
+    height: 70%;
+    background: rgba(0, 11, 20, 0.95);
+    border: 1px dashed #3b82f6;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 40px;
+    border-radius: 20px;
+}
+
+/* 8. THE SUBTLE REVEAL (The Quirks) */
+.hover-summary {
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin: 5px 0;
+}
+
+/* Reveal summary when hovering over the card */
+.investigation-card:hover .hover-summary {
+    opacity: 1;
+}
+
+/* 9. THE EMBLEM VAULT (Crammed Data) */
+.emblem-vault {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px;
+    background: #0f172a;
+    /* Deep Vault look */
+    border-radius: 6px;
+    margin-top: 10px;
+}

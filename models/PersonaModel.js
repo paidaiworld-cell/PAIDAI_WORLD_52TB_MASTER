@@ -1,95 +1,39 @@
-import mongoose from "mongoose";
+import express from 'express';
+import User from '../models/UserModel.js'; // Points cleanly back to your schema file
 
-// ---Sub-Schema for Traits ---
-// Traits are unlocked abilities (e.g., "Cohort Crusher")
-const traitSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-    },
-    level: {
-        type: Number,
-        default: 1,
-    },
-    type: {
-        // e.g., 'Negtiation', 'Contact', 'Data', 'Social'
-        type: String,
-        required: true,
-    },
-    description: {
-        type: String,
-        required: true,
-    },
-});
-// ---Main Persona Schema ---
-const PersonaSchema = new mongoose.Schema({
-    //Link to the user who owns this Persona
-    userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        // References the 'User' model once created
-        ref: 'User',
-    },
+const router = express.Router();
 
-    // Core Identity
-    name: {
-        type: String,
-        required: [true, 'Persona must have a unique name.'],
-    },
-    role: {
-        // e.g., 'Mediator', 'Opener', 'Closer', 'Art AI'
-        type: String,
-        required: [true, 'Persona must have deined role.'],
+/**
+ * @route   GET /api/user/:username
+ * @desc    Fetch a specific member profile containing all 3-pillar ecosystem metrics
+ * @access  Public / Authorized Internal Bridge
+ */
+router.get('/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
 
-    },
+        // 1. Search MongoDB for the unique handle string case-insensitive
+        const userProfile = await User.findOne({
+            username: { $regex: new RegExp(`^${username}$`, 'i') }
+        }).populate('persona_squad');
 
-    // Leveling & Progression
-    level: {
-        type: Number,
-        default: 1,
-    },
-    xp: {
-        type: Number,
-        default: 0,
-    },
+        // 2. Safely bounce if the identity isn't mapped inside the shadow economy
+        if (!userProfile) {
+            console.warn(`[BRIDGE WARN] Profile request failed. Handle not registered: "${username}"`);
+            return res.status(404).json({ error: `Member profile '${username}' not found inside system directory.` });
+        }
 
-    // AI Definition & Personality
-    base_prompt: {
-        // The core instructions that define its style ('scaerred from a thousand haggles')
-        type: String,
-    required: true,
-    },
+        // 3. Pipe out the pristine data packet directly to the UI
+        console.log(`[BRIDGE] Serving live profile metrics for member: "${userProfile.username}"`);
+        return res.status(200).json(userProfile);
 
-    // Gamification and Specialization
-    traits: [traitSchema], //Array of unlocked abilities
-
-    // Battle Scars & Metrics
-    stats: {
-        deals_won: {
-            type: Number,
-            default: 0,
-        },
-        deals_lost: {
-            type: Number,
-            default: 0,
-        },
-        avg_gain_usd: {
-            type: Number,
-            default: 0.00,
-        },
-    },
-
-    // Economy Tracking
-    tokens_burned: {
-        type: Number,
-        default: 0,
-    },
-
-}, {
-    // Adds 'createdAt' and 'updatedAt' timestamps automatically
-    timestamps: true,
+    } catch (error) {
+        console.error(`[BRIDGE ERROR] Failed to fetch member dataset: ${error.message}`);
+        return res.status(500).json({
+            error: "Internal server error reading from data vault.",
+            details: error.message
+        });
+    }
 });
 
-const Persona = mongoose.model('Persona', PersonaSchema);
-
-export default Persona;
+export default router;

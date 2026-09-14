@@ -1,0 +1,36 @@
+/* The Main Hub Container */
+.report-grid {
+    display: grid;
+    /* Automatically fit as many cards as possible, minimum 280px wide */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    /* Space between cards */
+    padding: 1rem;
+}
+
+/* Individual Community Cards */
+.community-card {
+    background: #1e293b;
+    /* Dark "Paidai" theme */
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease-in-out;
+    /* Smooth hover effect */
+}
+
+/* Hover effect to show the hub is "alive" */
+.community-card:hover {
+    transform: translateY(-5px);
+    border-color: #3b82f6;
+}
+
+/* Make images/charts responsive within cards */
+.card-visual {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}

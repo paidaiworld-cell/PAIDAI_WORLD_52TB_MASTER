@@ -1,72 +1,70 @@
-import chromadb
-# from langchain_google_genai import GoogleGenerativeAIEmbeddings
+import json
+import os
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 
-# --- 1. CONFIGURATION ---
-# We assume the collection has already been created by high_glory_indexer.py
-
-GLORY_THRESHOLD = 800  # Enforcing High-Glory standard (G >= 800)
-DB_PATH = "./PAIDAI_vector_store" # Local Chroma DB path
-COLLECTION_NAME = "paidai_knowledge"
-
-# --- 2. THE GLORY-FILTERED QUERY FUNCTION ---
-
-def retrieve_gold_standard_context(user_query: str):
+def local_rag_query(query_text: str, index_path='./rag_index.json', top_k=3):
     """
-    Queries the RAG index, strictly filtering results to include only
-    chunks tagged with a high Glory Score and the Western Canada region.
+    Executes a localized RAG search across your 176 generated structural shards.
+    Ranks text blocks by calculating token intersections across your 3-level hierarchy.
     """
-    # 1. Initialize the Vector Store client
-    client = chromadb.PersistentClient(path=DB_PATH)
-    collection = client.get_collection(name=COLLECTION_NAME)
-    
-    # 2. DEFINE THE METADATA FILTER (The Core Logic)
-    # ChromaDB uses MongoDB-like syntax for filtering on metadata fields.
-    glory_filter = {
-        # Filter 1: Only retrieve documents where glory_score_G is >= 800 (High-Glory)
-        "$and": [
-            {
-                "glory_score_G": {"$gte": GLORY_THRESHOLD}
-            },
-            # Filter 2: Ensure the data is from the Western Canada Branch
-            {
-                "region": {"$eq": "Western_Canada_RAG_V1"}
-            }
-        ]
-    }
+    if not os.path.exists(index_path):
+        print(f"ERROR: Cannot execute query. Shard index map missing at {index_path}")
+        return []
 
-    # 3. Perform the combined Semantic and Metadata Search
-    # The ChromaDB query method handles both semantic search (query_texts) and metadata filtering (where)
-    results = collection.query(
-        query_texts=[user_query],
-        n_results=5, # Retrieve up to 5 chunks
-        where=glory_filter # Apply the mandatory Glory filter
-    )
-    
-    # 4. Process and Display Results
-    if results['documents'] and results['documents'][0]:
-        print("\n--- GLORY-FILTERED RETRIEVAL SUCCESS ---")
-        print(f"Query: {user_query}")
-        print("---------------------------------------")
-        
-        # Display each retrieved chunk content and its Glory metadata
-        for i, doc in enumerate(results['documents'][0]):
-            metadata = results['metadatas'][0][i]
-            score = metadata.get('glory_score_G', 'N/A')
-            
-            # Display only the first 50 characters of content for conciseness (G2)
-            print(f"[{i+1}] G={score}: {doc[:50]}...")
-            print(f"      Source: {metadata.get('agent_id')[:8]}... (Token Size: {metadata.get('token_size')})")
-        
-        return results
-    else:
-        print("\n--- RETRIEVAL FAILED: NO HIGH-GLORY MATCHES FOUND ---")
-        print(f"No documents matched the criteria (G >= {GLORY_THRESHOLD} in Western Canada).")
-        return None
+    with open(index_path, 'r', encoding='utf-8') as f:
+        shard_database = json.load(f)
 
-# --- EXAMPLE EXECUTION ---
-if __name__ == "__main__":
-    # High-Glory RAG Question (Testing G3 Specificity: "Alberta code")
-    test_query = "What is the token-efficient initialization protocol for the vector store?"
+    query_tokens = set(query_text.lower().split())
+    ranked_results = []
+
+    print(f"\n[RAG ENGINE] Processing query: '{query_text}'")
+    print(f"[RAG ENGINE] Scanning all {len(shard_database)} localized shards...")
+
+    for shard in shard_database:
+        score = 0
+        
+        lvl1 = shard.get('hierarchy_level_1', '').lower()
+        lvl2 = shard.get('hierarchy_level_2', '').lower()
+        payload = shard.get('text_payload', '').lower()
+
+        # Weighted Structural Scoring Engine
+        for token in query_tokens:
+            if token in lvl1:
+                score += 5  # Level 1 Match
+            if token in lvl2:
+                score += 3  # Level 2 Match
+            if token in payload:
+                score += 1  # Level 3 Match
+
+        if score > 0:
+            ranked_results.append((score, shard))
+
+    ranked_results.sort(key=lambda x: x[0], reverse=True)
+    top_shards = ranked_results[:top_k]
+
+   # 1. Create a clean list to hold the parsed search results
+    clean_output = []
     
-    # Run the query function
-    retrieve_gold_standard_context(test_query)
+    for idx, (score, shard) in enumerate(top_shards):
+        # 2. Extract only the exact data keys you want to send to the UI
+        result_payload = {
+            "rank": idx + 1,
+            "score": score,
+            "physical_path": shard.get('physical_path'),
+            "shard_id": shard.get('shard_id'),
+            "hierarchy_level_1": shard.get('hierarchy_level_1'),
+            "hierarchy_level_2": shard.get('hierarchy_level_2'),
+            "text_payload": shard.get('text_payload', '')[:300]
+        }
+        clean_output.append(result_payload)
+        
+    # 3. Print ONLY the final clean JSON dump so Node can parse it instantly
+   # 3. Print ONLY the final clean JSON dump so Node can parse it instantly
+    print(json.dumps(clean_output))
+    return top_shards
+
+if __name__ == '__main__':
+    # If a query argument was passed by Node, use it; otherwise default to test query
+    test_query = sys.argv[1] if len(sys.argv) > 1 else "One Use One Life One Database"
+    local_rag_query(test_query)

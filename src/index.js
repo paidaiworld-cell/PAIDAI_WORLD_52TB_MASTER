@@ -1,10 +1,11 @@
+import './App.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import ArtCityTrap from './ArtCityTrap.jsx'; // This links to your ArtCityTrap.jsx in the same folder
+import CardViewer from './components/spatial/CardViewer.jsx';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <ArtCityTrap perfectArtUrl="https://via.placeholder.com/800" />
+    <CardViewer />
   </React.StrictMode>
 );

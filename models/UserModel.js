@@ -10,20 +10,29 @@ const UserSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    token_balance: {
+        type: Number,
+        default: 100000,
+    },
+    // 🔓 Cleanly mapped frontend metric gates
+    pedia_views: {
+        type: Number,
+        default: 0,
+    },
+    paideia_helped: {
+        type: Number,
+        default: 0,
+    },
     persona_squad: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Persona',
         }
     ],
-    token_balance: {
-        type: Number,
-        default: 100000,
-    },
 }, {
     timestamps: true,
 });
 
 const User = mongoose.model('User', UserSchema);
 
-export default User; // This is the 'default export' Node is looking for!
+export default User;
